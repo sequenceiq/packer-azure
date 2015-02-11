@@ -13,7 +13,7 @@ dependencies:
 
 
   override:
-    - git config --global user.email "you@example.com" &&  git config --global user.name "Your Name"
+    - git config --global user.email "you@example.com" && git config --global user.name "Your Name"
     - go get -d github.com/MSOpenTech/packer-azure || true
     - cd $GOPATH/src/github.com/MSOpenTech/packer-azure  && curl -L https://github.com/MSOpenTech/packer-azure/pull/36.patch | git am --signoff && go get -tags restapi ./...
 
