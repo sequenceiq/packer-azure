@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/management"
 	vmimage "github.com/Azure/azure-sdk-for-go/management/virtualmachineimage"
@@ -27,6 +28,18 @@ type Builder struct {
 	config *Config
 	runner multistep.Runner
 	client management.Client
+}
+
+func (b *Builder) isMocking() bool {
+
+	mocking := b.config.PackerUserVars["mock"] == "true"
+
+	if strings.Contains(b.config.PackerBuilderType, "mock") {
+		mocking = b.config.PackerUserVars["mock"] != "false"
+	}
+
+	log.Println("isMocking(): ", mocking)
+	return mocking
 }
 
 // Prepare processes the build configuration parameters.
@@ -76,73 +89,10 @@ func (b *Builder) Run(ui packer.Ui, hook packer.Hook, cache packer.Cache) (packe
 
 	var steps []multistep.Step
 
-	if b.config.OSType == constants.Target_Linux {
-		steps = []multistep.Step{
-			&lin.StepCreateCert{
-				TmpServiceName: b.config.tmpServiceName,
-			},
-			new(StepValidate),
-			&StepCreateService{
-				Location:       b.config.Location,
-				TmpServiceName: b.config.tmpServiceName,
-			},
-			&StepUploadCertificate{
-				TmpServiceName: b.config.tmpServiceName,
-			},
-			new(StepCreateVm),
-			&StepPollStatus{
-				TmpServiceName: b.config.tmpServiceName,
-				TmpVmName:      b.config.tmpVmName,
-				OSType:         b.config.OSType,
-			},
+	if b.isMocking() {
+		ui.Say("MOCKING AZURE ...")
 
-			&communicator.StepConnectSSH{
-				Config:    &b.config.Comm,
-				Host:      lin.SSHHost,
-				SSHConfig: lin.SSHConfig(b.config.UserName),
-			},
-			&common.StepProvision{},
-
-			&lin.StepGeneralizeOS{
-				Command: "sudo /usr/sbin/waagent -force -deprovision+user && export HISTSIZE=0 && sync",
-			},
-			&StepStopVm{
-				TmpVmName:      b.config.tmpVmName,
-				TmpServiceName: b.config.tmpServiceName,
-			},
-			&StepCreateImage{
-				TmpServiceName:    b.config.tmpServiceName,
-				TmpVmName:         b.config.tmpVmName,
-				UserImageName:     b.config.userImageName,
-				UserImageLabel:    b.config.UserImageLabel,
-				RecommendedVMSize: b.config.InstanceSize,
-			},
-		}
-	} else if b.config.OSType == constants.Target_Windows {
 		steps = []multistep.Step{
-			new(StepValidate),
-			&StepCreateService{
-				Location:       b.config.Location,
-				TmpServiceName: b.config.tmpServiceName,
-			},
-			new(StepCreateVm),
-			&StepPollStatus{
-				TmpServiceName: b.config.tmpServiceName,
-				TmpVmName:      b.config.tmpVmName,
-				OSType:         b.config.OSType,
-			},
-			&win.StepSetProvisionInfrastructure{
-				VmName:                    b.config.tmpVmName,
-				ServiceName:               b.config.tmpServiceName,
-				StorageAccountName:        b.config.StorageAccount,
-				TempContainerName:         b.config.tmpContainerName,
-				ProvisionTimeoutInMinutes: b.config.ProvisionTimeoutInMinutes,
-			},
-			&common.StepProvision{},
-			&StepStopVm{
-				TmpVmName:      b.config.tmpVmName,
-				TmpServiceName: b.config.tmpServiceName,
-			},
 			&StepCreateImage{
 				TmpServiceName:    b.config.tmpServiceName,
 				TmpVmName:         b.config.tmpVmName,
@@ -153,9 +103,87 @@ func (b *Builder) Run(ui packer.Ui, hook packer.Hook, cache packer.Cache) (packe
 		}
 
 	} else {
-		return nil, fmt.Errorf("Unkonwn OS type: %s", b.config.OSType)
-	}
 
+		if b.config.OSType == constants.Target_Linux {
+			steps = []multistep.Step{
+				&lin.StepCreateCert{
+					TmpServiceName: b.config.tmpServiceName,
+				},
+				new(StepValidate),
+				&StepCreateService{
+					Location:       b.config.Location,
+					TmpServiceName: b.config.tmpServiceName,
+				},
+				&StepUploadCertificate{
+					TmpServiceName: b.config.tmpServiceName,
+				},
+				new(StepCreateVm),
+				&StepPollStatus{
+					TmpServiceName: b.config.tmpServiceName,
+					TmpVmName:      b.config.tmpVmName,
+					OSType:         b.config.OSType,
+				},
+
+				&communicator.StepConnectSSH{
+					Config:    &b.config.Comm,
+					Host:      lin.SSHHost,
+					SSHConfig: lin.SSHConfig(b.config.UserName),
+				},
+				&common.StepProvision{},
+
+				&lin.StepGeneralizeOS{
+					Command: "sudo /usr/sbin/waagent -force -deprovision+user && export HISTSIZE=0 && sync",
+				},
+				&StepStopVm{
+					TmpVmName:      b.config.tmpVmName,
+					TmpServiceName: b.config.tmpServiceName,
+				},
+				&StepCreateImage{
+					TmpServiceName:    b.config.tmpServiceName,
+					TmpVmName:         b.config.tmpVmName,
+					UserImageName:     b.config.userImageName,
+					UserImageLabel:    b.config.UserImageLabel,
+					RecommendedVMSize: b.config.InstanceSize,
+				},
+			}
+		} else if b.config.OSType == constants.Target_Windows {
+			steps = []multistep.Step{
+				new(StepValidate),
+				&StepCreateService{
+					Location:       b.config.Location,
+					TmpServiceName: b.config.tmpServiceName,
+				},
+				new(StepCreateVm),
+				&StepPollStatus{
+					TmpServiceName: b.config.tmpServiceName,
+					TmpVmName:      b.config.tmpVmName,
+					OSType:         b.config.OSType,
+				},
+				&win.StepSetProvisionInfrastructure{
+					VmName:                    b.config.tmpVmName,
+					ServiceName:               b.config.tmpServiceName,
+					StorageAccountName:        b.config.StorageAccount,
+					TempContainerName:         b.config.tmpContainerName,
+					ProvisionTimeoutInMinutes: b.config.ProvisionTimeoutInMinutes,
+				},
+				&common.StepProvision{},
+				&StepStopVm{
+					TmpVmName:      b.config.tmpVmName,
+					TmpServiceName: b.config.tmpServiceName,
+				},
+				&StepCreateImage{
+					TmpServiceName:    b.config.tmpServiceName,
+					TmpVmName:         b.config.tmpVmName,
+					UserImageName:     b.config.userImageName,
+					UserImageLabel:    b.config.UserImageLabel,
+					RecommendedVMSize: b.config.InstanceSize,
+				},
+			}
+
+		} else {
+			return nil, fmt.Errorf("Unkonwn OS type: %s", b.config.OSType)
+		}
+	}
 	// Run the steps.
 	if b.config.PackerDebug {
 		b.runner = &multistep.DebugRunner{
