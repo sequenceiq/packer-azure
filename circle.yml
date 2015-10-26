@@ -5,16 +5,10 @@ machine:
 
 dependencies:
   pre:
-    - go get github.com/mitchellh/gox
-    - CGO_ENABLED=0 gox -osarch=linux/amd64 -build-toolchain
-
     - go get -d github.com/mitchellh/packer
-    - sed -i '/VersionPrerelease/ s/""/"dev"/' $GOPATH/src/github.com/mitchellh/packer/version.go
-
 
   override:
-    - git config --global user.email "you@example.com" && git config --global user.name "Your Name"
-    - go get -d github.com/MSOpenTech/packer-azure || true
+    - rm -rf $GOPATH/src/github.com/MSOpenTech/packer-azure && ln -s ~/packer-azure/ $GOPATH/src/github.com/MSOpenTech/packer-azure
     - cd $GOPATH/src/github.com/MSOpenTech/packer-azure && go get ./...
 
   post:
