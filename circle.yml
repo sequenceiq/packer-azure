@@ -15,7 +15,7 @@ dependencies:
   override:
     - git config --global user.email "you@example.com" && git config --global user.name "Your Name"
     - go get -d github.com/MSOpenTech/packer-azure || true
-    - cd $GOPATH/src/github.com/MSOpenTech/packer-azure && go get -tags restapi ./...
+    - cd $GOPATH/src/github.com/MSOpenTech/packer-azure && go get ./...
 
   post:
     - tar -czvf $CIRCLE_ARTIFACTS/packer.tgz -C  $GOPATH/bin $(find $GOPATH/bin -name packer\* -printf '%P ')
