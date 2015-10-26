@@ -51,6 +51,18 @@ type azure_config struct {
 	userImageName    string
 }
 
+func (b *Builder) isMocking() bool {
+
+	mocking := b.config.PackerUserVars["mock"] == "true"
+
+	if strings.Contains(b.config.PackerBuilderType, "mock") {
+		mocking = b.config.PackerUserVars["mock"] != "false"
+	}
+
+	log.Println("isMocking(): ", mocking)
+	return mocking
+}
+
 // Prepare processes the build configuration parameters.
 func (b *Builder) Prepare(raws ...interface{}) ([]string, error) {
 
@@ -296,98 +308,10 @@ func (b *Builder) Run(ui packer.Ui, hook packer.Hook, cache packer.Cache) (packe
 
 	var steps []multistep.Step
 
-	if b.config.OsType == targets.Linux {
-		certFileName := "cert.pem"
-		keyFileName := "key.pem"
+	if b.isMocking() {
+		ui.Say("MOCKING AZURE ...")
 
 		steps = []multistep.Step{
-			&lin.StepCreateCert{
-				CertFileName:   certFileName,
-				KeyFileName:    keyFileName,
-				TmpServiceName: b.config.tmpServiceName,
-			},
-			&targets.StepCreateService{
-				Location:       b.config.Location,
-				TmpServiceName: b.config.tmpServiceName,
-			},
-			&targets.StepUploadCertificate{
-				TmpServiceName: b.config.tmpServiceName,
-			},
-			&lin.StepCreateVm{
-				OsType:                  b.config.OsType,
-				StorageAccount:          b.config.StorageAccount,
-				StorageAccountContainer: b.config.StorageAccountContainer,
-				OsImageLabel:            b.config.OsImageLabel,
-				TmpVmName:               b.config.tmpVmName,
-				TmpServiceName:          b.config.tmpServiceName,
-				InstanceSize:            b.config.InstanceSize,
-				Username:                b.config.username,
-			},
-
-			&targets.StepPollStatus{
-				TmpServiceName: b.config.tmpServiceName,
-				TmpVmName:      b.config.tmpVmName,
-				OsType:         b.config.OsType,
-			},
-
-			&common.StepConnectSSH{
-				SSHAddress:     lin.SSHAddress,
-				SSHConfig:      lin.SSHConfig(b.config.username),
-				SSHWaitTimeout: 20 * time.Minute,
-			},
-			&common.StepProvision{},
-
-			&lin.StepGeneralizeOs{
-				Command: "sudo /usr/sbin/waagent -force -deprovision+user && export HISTSIZE=0 && sync",
-			},
-			&targets.StepStopVm{
-				TmpVmName:      b.config.tmpVmName,
-				TmpServiceName: b.config.tmpServiceName,
-			},
-			&targets.StepCreateImage{
-				TmpServiceName:    b.config.tmpServiceName,
-				TmpVmName:         b.config.tmpVmName,
-				UserImageName:     b.config.userImageName,
-				UserImageLabel:    b.config.UserImageLabel,
-				RecommendedVMSize: b.config.InstanceSize,
-			},
-		}
-	} else if b.config.OsType == targets.Windows {
-		//		b.config.tmpVmName = "shchTemp"
-		//		b.config.tmpServiceName = "shchTemp"
-		steps = []multistep.Step{
-
-			&targets.StepCreateService{
-				Location:       b.config.Location,
-				TmpServiceName: b.config.tmpServiceName,
-			},
-			&win.StepCreateVm{
-				OsType:                  b.config.OsType,
-				StorageAccount:          b.config.StorageAccount,
-				StorageAccountContainer: b.config.StorageAccountContainer,
-				OsImageLabel:            b.config.OsImageLabel,
-				TmpVmName:               b.config.tmpVmName,
-				TmpServiceName:          b.config.tmpServiceName,
-				InstanceSize:            b.config.InstanceSize,
-				Username:                b.config.username,
-				Password:                utils.RandomPassword(),
-			},
-			&targets.StepPollStatus{
-				TmpServiceName: b.config.tmpServiceName,
-				TmpVmName:      b.config.tmpVmName,
-				OsType:         b.config.OsType,
-			},
-			&win.StepSetProvisionInfrastructure{
-				VmName:             b.config.tmpVmName,
-				ServiceName:        b.config.tmpServiceName,
-				StorageAccountName: b.config.StorageAccount,
-				TempContainerName:  b.config.tmpContainerName,
-			},
-			&common.StepProvision{},
-			&targets.StepStopVm{
-				TmpVmName:      b.config.tmpVmName,
-				TmpServiceName: b.config.tmpServiceName,
-			},
 			&targets.StepCreateImage{
 				TmpServiceName:    b.config.tmpServiceName,
 				TmpVmName:         b.config.tmpVmName,
@@ -398,7 +322,110 @@ func (b *Builder) Run(ui packer.Ui, hook packer.Hook, cache packer.Cache) (packe
 		}
 
 	} else {
-		return nil, fmt.Errorf("Unkonwn OS type: %s", b.config.OsType)
+		if b.config.OsType == targets.Linux {
+			certFileName := "cert.pem"
+			keyFileName := "key.pem"
+
+			steps = []multistep.Step{
+				&lin.StepCreateCert{
+					CertFileName:   certFileName,
+					KeyFileName:    keyFileName,
+					TmpServiceName: b.config.tmpServiceName,
+				},
+				&targets.StepCreateService{
+					Location:       b.config.Location,
+					TmpServiceName: b.config.tmpServiceName,
+				},
+				&targets.StepUploadCertificate{
+					TmpServiceName: b.config.tmpServiceName,
+				},
+				&lin.StepCreateVm{
+					OsType:                  b.config.OsType,
+					StorageAccount:          b.config.StorageAccount,
+					StorageAccountContainer: b.config.StorageAccountContainer,
+					OsImageLabel:            b.config.OsImageLabel,
+					TmpVmName:               b.config.tmpVmName,
+					TmpServiceName:          b.config.tmpServiceName,
+					InstanceSize:            b.config.InstanceSize,
+					Username:                b.config.username,
+				},
+
+				&targets.StepPollStatus{
+					TmpServiceName: b.config.tmpServiceName,
+					TmpVmName:      b.config.tmpVmName,
+					OsType:         b.config.OsType,
+				},
+
+				&common.StepConnectSSH{
+					SSHAddress:     lin.SSHAddress,
+					SSHConfig:      lin.SSHConfig(b.config.username),
+					SSHWaitTimeout: 20 * time.Minute,
+				},
+				&common.StepProvision{},
+
+				&lin.StepGeneralizeOs{
+					Command: "sudo /usr/sbin/waagent -force -deprovision+user && export HISTSIZE=0 && sync",
+				},
+				&targets.StepStopVm{
+					TmpVmName:      b.config.tmpVmName,
+					TmpServiceName: b.config.tmpServiceName,
+				},
+				&targets.StepCreateImage{
+					TmpServiceName:    b.config.tmpServiceName,
+					TmpVmName:         b.config.tmpVmName,
+					UserImageName:     b.config.userImageName,
+					UserImageLabel:    b.config.UserImageLabel,
+					RecommendedVMSize: b.config.InstanceSize,
+				},
+			}
+		} else if b.config.OsType == targets.Windows {
+			//		b.config.tmpVmName = "shchTemp"
+			//		b.config.tmpServiceName = "shchTemp"
+			steps = []multistep.Step{
+
+				&targets.StepCreateService{
+					Location:       b.config.Location,
+					TmpServiceName: b.config.tmpServiceName,
+				},
+				&win.StepCreateVm{
+					OsType:                  b.config.OsType,
+					StorageAccount:          b.config.StorageAccount,
+					StorageAccountContainer: b.config.StorageAccountContainer,
+					OsImageLabel:            b.config.OsImageLabel,
+					TmpVmName:               b.config.tmpVmName,
+					TmpServiceName:          b.config.tmpServiceName,
+					InstanceSize:            b.config.InstanceSize,
+					Username:                b.config.username,
+					Password:                utils.RandomPassword(),
+				},
+				&targets.StepPollStatus{
+					TmpServiceName: b.config.tmpServiceName,
+					TmpVmName:      b.config.tmpVmName,
+					OsType:         b.config.OsType,
+				},
+				&win.StepSetProvisionInfrastructure{
+					VmName:             b.config.tmpVmName,
+					ServiceName:        b.config.tmpServiceName,
+					StorageAccountName: b.config.StorageAccount,
+					TempContainerName:  b.config.tmpContainerName,
+				},
+				&common.StepProvision{},
+				&targets.StepStopVm{
+					TmpVmName:      b.config.tmpVmName,
+					TmpServiceName: b.config.tmpServiceName,
+				},
+				&targets.StepCreateImage{
+					TmpServiceName:    b.config.tmpServiceName,
+					TmpVmName:         b.config.tmpVmName,
+					UserImageName:     b.config.userImageName,
+					UserImageLabel:    b.config.UserImageLabel,
+					RecommendedVMSize: b.config.InstanceSize,
+				},
+			}
+
+		} else {
+			return nil, fmt.Errorf("Unkonwn OS type: %s", b.config.OsType)
+		}
 	}
 
 	// Run the steps.
