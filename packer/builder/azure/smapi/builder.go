@@ -92,7 +92,7 @@ func (b *Builder) Run(ui packer.Ui, hook packer.Hook, cache packer.Cache) (packe
 		ui.Say("MOCKING AZURE ...")
 
 		steps = []multistep.Step{
-			&StepCreateImage{
+			&StepCreateImageMock{
 				TmpServiceName:    b.config.tmpServiceName,
 				TmpVmName:         b.config.tmpVmName,
 				UserImageName:     b.config.userImageName,
@@ -193,6 +193,15 @@ func (b *Builder) Run(ui packer.Ui, hook packer.Hook, cache packer.Cache) (packe
 		b.runner = &multistep.BasicRunner{Steps: steps}
 	}
 	b.runner.Run(state)
+
+	if b.isMocking() {
+		return &artifact{
+			imageLabel:    b.config.UserImageLabel,
+			imageName:     b.config.userImageName,
+			mediaLocation: fmt.Sprintf("%s|%s|%s", b.config.Location, b.config.StorageAccount, b.config.StorageContainer),
+		}, nil
+
+	}
 
 	// Report any errors.
 	if rawErr, ok := state.GetOk("error"); ok {

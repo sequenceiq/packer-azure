@@ -17,7 +17,7 @@ type StepCreateImageMock struct {
 func (s *StepCreateImageMock) Run(state multistep.StateBag) multistep.StepAction {
 	ui := state.Get(constants.Ui).(packer.Ui)
 
-	ui.Say("Creating Azure Image. If Succeed This Will Remove the Temorary VM...")
+	ui.Say("[MOCK] Creating Azure Image. If Succeed This Will Remove the Temorary VM...")
 
 	// CatpureVMImage removes the VM
 	state.Put(constants.ImageCreated, 1)
