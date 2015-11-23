@@ -8,7 +8,7 @@ dependencies:
     - go get -d github.com/mitchellh/packer
 
   override:
-    - rm -rf $GOPATH/src/github.com/MSOpenTech/packer-azure && ln -s ~/packer-azure/ $GOPATH/src/github.com/MSOpenTech/packer-azure
+    - rm -rf $GOPATH/src/github.com/MSOpenTech/packer-azure && mkdir -p $GOPATH/src/github.com/MSOpenTech/ && ln -s ~/packer-azure/ $GOPATH/src/github.com/MSOpenTech/packer-azure
     - cd $GOPATH/src/github.com/MSOpenTech/packer-azure && CGO_ENABLED=0 go get -installsuffix cgo ./...
 
   post:
