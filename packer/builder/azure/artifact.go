@@ -29,7 +29,7 @@ func (a *artifact) Id() string {
 }
 
 func (a *artifact) State(name string) interface{} {
-	return "Not implemented"
+	return nil
 }
 
 func (a *artifact) String() string {
