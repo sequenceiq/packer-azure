@@ -29,7 +29,16 @@ func (a *artifact) Id() string {
 }
 
 func (a *artifact) State(name string) interface{} {
-	return nil
+	switch name {
+	case "atlas.artifact.metadata":
+		metadata := make(map[string]string)
+		metadata["imageLabel"] = a.imageLabel
+		metadata["imageName"] = a.imageName
+		metadata["mediaLocation"] = a.mediaLocation
+		return metadata
+	default:
+		return nil
+	}
 }
 
 func (a *artifact) String() string {
