@@ -16,8 +16,8 @@ func FindVmImage(imageList []vmi.VMImage, name, label, location string) (vmi.VMI
 	for _, im := range imageList {
 		for _, loc := range strings.Split(im.Location, ";") {
 			if loc == location &&
-				(label != "" && im.Label == label) &&
-				(name != "" && im.Name == name) {
+				(label == "" || im.Label == label) &&
+				(name == "" || im.Name == name) {
 				matches = append(matches, im)
 			}
 		}
