@@ -1,7 +1,7 @@
 package azure
 
 import (
-	"github.com/MSOpenTech/packer-azure/packer/builder/azure/constants"
+	"github.com/Azure/packer-azure/packer/builder/azure/common/constants"
 	"github.com/mitchellh/multistep"
 	"github.com/mitchellh/packer/packer"
 )
