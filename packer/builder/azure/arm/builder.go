@@ -4,6 +4,7 @@
 package arm
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/Azure/packer-azure/packer/builder/azure/common/constants"
@@ -80,6 +81,11 @@ func (b *Builder) Run(ui packer.Ui, hook packer.Hook, cache packer.Cache) (packe
 		NewStepCaptureImage(azureClient, ui),
 		NewStepDeleteResourceGroup(azureClient, ui),
 		NewStepDeleteOSDisk(azureClient, ui),
+	}
+
+	if b.config.PackerDebug {
+		ui.Message(fmt.Sprintf("temp admin user: '%s'", b.config.UserName))
+		ui.Message(fmt.Sprintf("temp admin password: '%s'", b.config.tmpAdminPassword))
 	}
 
 	b.runner = b.createRunner(&steps, ui)
