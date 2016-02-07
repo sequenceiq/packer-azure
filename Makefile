@@ -1,4 +1,4 @@
-VERSION=v3
+VERSION=v4
 
 build-local:
 	#go build -a -v -o ~/.packer.d/plugins/packer-builder-azure   ./packer/plugin/packer-builder-azure/
