@@ -1,7 +1,7 @@
 VERSION=v4
 
 build-local:
-	#go build -a -v -o ~/.packer.d/plugins/packer-builder-azure   ./packer/plugin/packer-builder-azure/
+	go build -a -v -o ~/.packer.d/plugins/packer-builder-azure   ./packer/plugin/packer-builder-azure/
 	go build -a -v -o ~/.packer.d/plugins/packer-builder-azure-arm ./packer/plugin/packer-builder-azure-arm/
 
 release:
