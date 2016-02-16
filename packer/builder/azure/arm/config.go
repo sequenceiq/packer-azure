@@ -22,8 +22,10 @@ import (
 )
 
 const (
-	DefaultUserName = "packer"
-	DefaultVMSize   = "Standard_A1"
+	DefaultUserName        = "packer"
+	DefaultVMSize          = "Standard_A1"
+	StorageProfileOfficial = "Official"
+	StorageProfileCustom   = "Custom"
 )
 
 type Config struct {
@@ -40,11 +42,12 @@ type Config struct {
 	CaptureContainerName string `mapstructure:"capture_container_name"`
 
 	// Compute
-	ImagePublisher string `mapstructure:"image_publisher"`
-	ImageOffer     string `mapstructure:"image_offer"`
-	ImageSku       string `mapstructure:"image_sku"`
-	Location       string `mapstructure:"location"`
-	VMSize         string `mapstructure:"vm_size"`
+	CustomImageVhdUri string `mapstructure:"custom_image_vhd_uri"`
+	ImagePublisher    string `mapstructure:"image_publisher"`
+	ImageOffer        string `mapstructure:"image_offer"`
+	ImageSku          string `mapstructure:"image_sku"`
+	Location          string `mapstructure:"location"`
+	VMSize            string `mapstructure:"vm_size"`
 
 	// Deployment
 	ResourceGroupName string `mapstructure:"resource_group_name"`
@@ -59,6 +62,7 @@ type Config struct {
 	tmpComputeName       string
 	tmpDeploymentName    string
 	tmpOSDiskName        string
+	storageProfile       string
 
 	// Authentication with the VM via SSH
 	sshAuthorizedKey string
@@ -74,6 +78,7 @@ func (c *Config) toTemplateParameters() *TemplateParameters {
 	return &TemplateParameters{
 		AdminUsername:      &TemplateParameter{c.UserName},
 		AdminPassword:      &TemplateParameter{c.tmpAdminPassword},
+		CustomImageVhdUri:  &TemplateParameter{c.CustomImageVhdUri},
 		DnsNameForPublicIP: &TemplateParameter{c.tmpComputeName},
 		ImageOffer:         &TemplateParameter{c.ImageOffer},
 		ImagePublisher:     &TemplateParameter{c.ImagePublisher},
@@ -81,6 +86,7 @@ func (c *Config) toTemplateParameters() *TemplateParameters {
 		OSDiskName:         &TemplateParameter{c.tmpOSDiskName},
 		SshAuthorizedKey:   &TemplateParameter{c.sshAuthorizedKey},
 		StorageAccountName: &TemplateParameter{c.StorageAccount},
+		StorageProfile:     &TemplateParameter{c.storageProfile},
 		VMSize:             &TemplateParameter{c.VMSize},
 		VMName:             &TemplateParameter{c.tmpComputeName},
 	}
@@ -108,6 +114,12 @@ func newConfig(raws ...interface{}) (*Config, []string, error) {
 
 	provideDefaultValues(&c)
 	setRuntimeValues(&c)
+
+	if c.CustomImageVhdUri != "" {
+		c.storageProfile = StorageProfileCustom
+	} else {
+		c.storageProfile = StorageProfileOfficial
+	}
 
 	err = setSshValues(&c)
 	if err != nil {
@@ -219,16 +231,18 @@ func assertRequiredParametersSet(c *Config, errs *packer.MultiError) {
 	/////////////////////////////////////////////
 	// Compute
 
-	if c.ImagePublisher == "" {
-		errs = packer.MultiErrorAppend(errs, fmt.Errorf("A image_publisher must be specified"))
-	}
+	if c.CustomImageVhdUri == "" {
+		if c.ImagePublisher == "" {
+			errs = packer.MultiErrorAppend(errs, fmt.Errorf("A image_publisher or custom_image_vhd_uri must be specified"))
+		}
 
-	if c.ImageOffer == "" {
-		errs = packer.MultiErrorAppend(errs, fmt.Errorf("A image_offer must be specified"))
-	}
+		if c.ImageOffer == "" {
+			errs = packer.MultiErrorAppend(errs, fmt.Errorf("A image_offer must be specified"))
+		}
 
-	if c.ImageSku == "" {
-		errs = packer.MultiErrorAppend(errs, fmt.Errorf("A image_sku must be specified"))
+		if c.ImageSku == "" {
+			errs = packer.MultiErrorAppend(errs, fmt.Errorf("A image_sku must be specified"))
+		}
 	}
 
 	if c.Location == "" {

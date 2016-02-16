@@ -41,6 +41,17 @@ const Linux = `{
     },
     "vmName": {
       "type": "string"
+    },
+	"customImageVhdUri" :{
+      "type": "string"
+	},
+	"storageProfile" : {
+	  "type": "string",
+      "defaultValue": "Small",
+      "allowedValues": [
+        "Official",
+        "Custom"
+      ]
     }
   },
   "variables": {
@@ -56,7 +67,39 @@ const Linux = `{
     "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('subnetName'))]",
     "virtualNetworkName": "packerNetwork",
     "vmStorageAccountContainerName": "images",
-    "vnetID": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]"
+    "vnetID": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
+
+	"storageProfileOfficial": {
+	  "imageReference": {
+		"publisher": "[parameters('imagePublisher')]",
+		"offer": "[parameters('imageOffer')]",
+		"sku": "[parameters('imageSku')]",
+		"version": "latest"
+	  },
+	  "osDisk": {
+		"name": "osdisk",
+		"vhd": {
+		  "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/', parameters('osDiskName'),'.vhd')]"
+		},
+		"caching": "ReadWrite",
+		"createOption": "FromImage"
+	  }
+	},
+	"storageProfileCustom": {
+	  "osDisk": {
+		"osType": "Linux",
+		"name": "custom-osDisk",
+		"createOption": "FromImage",
+		"image": {
+		  "uri": "[parameters('customImageVhdUri')]"
+		},
+		"vhd": {
+		  "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/', parameters('osDiskName'),'.vhd')]"
+		},
+		"caching": "ReadWrite"
+	  }
+	},
+	"storageProfile": "[variables(concat('storageProfile', parameters('storageProfile')))]"
   },
   "resources": [
     {
@@ -146,22 +189,7 @@ const Linux = `{
             }
           }
         },
-        "storageProfile": {
-          "imageReference": {
-            "publisher": "[parameters('imagePublisher')]",
-            "offer": "[parameters('imageOffer')]",
-            "sku": "[parameters('imageSku')]",
-            "version": "latest"
-          },
-          "osDisk": {
-            "name": "osdisk",
-            "vhd": {
-              "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/', parameters('osDiskName'),'.vhd')]"
-            },
-            "caching": "ReadWrite",
-            "createOption": "FromImage"
-          }
-        },
+        "storageProfile": "[variables('storageProfile')]",
         "networkProfile": {
           "networkInterfaces": [
             {

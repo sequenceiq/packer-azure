@@ -23,6 +23,7 @@ type TemplateParameter struct {
 type TemplateParameters struct {
 	AdminUsername      *TemplateParameter `json:"adminUsername,omitempty"`
 	AdminPassword      *TemplateParameter `json:"adminPassword,omitempty"`
+	CustomImageVhdUri  *TemplateParameter `json:"customImageVhdUri,omitempty"`
 	DnsNameForPublicIP *TemplateParameter `json:"dnsNameForPublicIP,omitempty"`
 	ImageOffer         *TemplateParameter `json:"imageOffer,omitempty"`
 	ImagePublisher     *TemplateParameter `json:"imagePublisher,omitempty"`
@@ -30,6 +31,7 @@ type TemplateParameters struct {
 	OSDiskName         *TemplateParameter `json:"osDiskName,omitempty"`
 	SshAuthorizedKey   *TemplateParameter `json:"sshAuthorizedKey,omitempty"`
 	StorageAccountName *TemplateParameter `json:"storageAccountName,omitempty"`
+	StorageProfile     *TemplateParameter `json:"storageProfile,omitempty"`
 	VMSize             *TemplateParameter `json:"vmSize,omitempty"`
 	VMName             *TemplateParameter `json:"vmName,omitempty"`
 }
